@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hyperion.etl.mapper.PipelineNodeMapper">
+
+    <resultMap id="PipelineNodeResultMap" type="com.hyperion.etl.domain.PipelineNode">
+        <id property="id" column="id"/>
+        <result property="pipelineId" column="pipeline_id"/>
+        <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="domainService" column="domain_service"/>
+        <result property="config" column="config" 
+                typeHandler="com.hyperion.etl.config.JsonNodeTypeHandler"/>
+        <result property="posX" column="pos_x"/>
+        <result property="posY" column="pos_y"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.hyperion.etl.domain.PipelineNode">
+        INSERT INTO pipeline_nodes (
+            id, pipeline_id, type, domain_service, config, pos_x, pos_y
+        ) VALUES (
+            #{id}::uuid,
+            #{pipelineId}::uuid,
+            #{type}::varchar,
+            #{domainService},
+            #{config, typeHandler=com.hyperion.etl.config.JsonNodeTypeHandler}::jsonb,
+            #{posX},
+            #{posY}
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO pipeline_nodes (
+            id, pipeline_id, type, domain_service, config, pos_x, pos_y
+        ) VALUES
+        <foreach collection="nodes" item="node" separator=",">
+            (
+                #{node.id}::uuid,
+                #{node.pipelineId}::uuid,
+                #{node.type}::varchar,
+                #{node.domainService},
+                #{node.config, typeHandler=com.hyperion.etl.config.JsonNodeTypeHandler}::jsonb,
+                #{node.posX},
+                #{node.posY}
+            )
+        </foreach>
+    </insert>
+
+    <select id="findByPipelineId" resultMap="PipelineNodeResultMap">
+        SELECT * FROM pipeline_nodes
+        WHERE pipeline_id = #{pipelineId}::uuid
+        ORDER BY pos_y, pos_x
+    </select>
+
+    <select id="findById" resultMap="PipelineNodeResultMap">
+        SELECT * FROM pipeline_nodes
+        WHERE id = #{id}::uuid
+    </select>
+
+    <delete id="deleteByPipelineId">
+        DELETE FROM pipeline_nodes
+        WHERE pipeline_id = #{pipelineId}::uuid
+    </delete>
+
+</mapper>

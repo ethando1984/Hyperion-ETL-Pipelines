@@ -1,0 +1,68 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Spring Boot
+spring.log
+
+# Application-specific
+application-local.yml
+application-dev.yml
+*.env
+.env.local
+
+# Database
+*.db
+*.sqlite
+
+# Node (for React Canvas)
+hyperion-etl-canvas/node_modules/
+hyperion-etl-canvas/dist/
+hyperion-etl-canvas/.vite/
+hyperion-etl-canvas/.next/
+hyperion-etl-canvas/out/

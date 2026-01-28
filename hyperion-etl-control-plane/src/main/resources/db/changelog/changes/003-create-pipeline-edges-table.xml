@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003-create-pipeline-edges-table" author="hyperion-etl">
+        <createTable tableName="pipeline_edges">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="pipeline_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_pipeline_edges_pipeline"
+                             referencedTableName="pipelines"
+                             referencedColumnNames="id"
+                             deleteCascade="true"/>
+            </column>
+            <column name="from_node_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_pipeline_edges_from_node"
+                             referencedTableName="pipeline_nodes"
+                             referencedColumnNames="id"
+                             deleteCascade="true"/>
+            </column>
+            <column name="to_node_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_pipeline_edges_to_node"
+                             referencedTableName="pipeline_nodes"
+                             referencedColumnNames="id"
+                             deleteCascade="true"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="pipeline_edges"
+            columnNames="pipeline_id, from_node_id, to_node_id"
+            constraintName="uk_pipeline_edges_nodes"/>
+    </changeSet>
+
+</databaseChangeLog>

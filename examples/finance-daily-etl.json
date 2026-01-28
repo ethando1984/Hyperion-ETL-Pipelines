@@ -1,0 +1,65 @@
+{
+    "pipeline": {
+        "domain": "finance",
+        "name": "Daily Revenue ETL",
+        "description": "Aggregates daily revenue from transactions database and loads into data warehouse",
+        "status": "DRAFT"
+    },
+    "nodes": [
+        {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "type": "SOURCE",
+            "domainService": "finance-etl",
+            "config": {
+                "sourceType": "postgresql",
+                "query": "SELECT transaction_date, customer_id, amount FROM transactions WHERE transaction_date = CURRENT_DATE",
+                "connectionString": "jdbc:postgresql://finance-db:5432/transactions"
+            },
+            "posX": 100,
+            "posY": 200
+        },
+        {
+            "id": "b2c3d4e5-f678-9012-3456-789abcdef012",
+            "type": "TRANSFORM",
+            "domainService": "finance-etl",
+            "config": {
+                "transformationType": "aggregate",
+                "groupBy": [
+                    "transaction_date"
+                ],
+                "aggregations": {
+                    "total_revenue": "SUM(amount)",
+                    "total_transactions": "COUNT(*)",
+                    "avg_transaction": "AVG(amount)"
+                }
+            },
+            "posX": 400,
+            "posY": 200
+        },
+        {
+            "id": "c3d4e5f6-7890-1234-5678-90abcdef1234",
+            "type": "SINK",
+            "domainService": "finance-etl",
+            "config": {
+                "sinkType": "snowflake",
+                "table": "finance.daily_revenue",
+                "writeMode": "append",
+                "connectionString": "jdbc:snowflake://account.snowflakecomputing.com"
+            },
+            "posX": 700,
+            "posY": 200
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1f2g3h4-i5j6-7890-abcd-ef1234567890",
+            "fromNodeId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "toNodeId": "b2c3d4e5-f678-9012-3456-789abcdef012"
+        },
+        {
+            "id": "f2g3h4i5-j678-9012-3456-789abcdef012",
+            "fromNodeId": "b2c3d4e5-f678-9012-3456-789abcdef012",
+            "toNodeId": "c3d4e5f6-7890-1234-5678-90abcdef1234"
+        }
+    ]
+}

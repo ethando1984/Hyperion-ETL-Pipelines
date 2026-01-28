@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hyperion.etl.mapper.PipelineMapper">
+
+    <resultMap id="PipelineResultMap" type="com.hyperion.etl.domain.Pipeline">
+        <id property="id" column="id"/>
+        <result property="domain" column="domain"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="version" column="version"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.hyperion.etl.domain.Pipeline">
+        INSERT INTO pipelines (
+            id, domain, name, description, status, version,
+            created_at, updated_at, created_by
+        ) VALUES (
+            #{id}::uuid,
+            #{domain},
+            #{name},
+            #{description},
+            #{status}::varchar,
+            #{version},
+            #{createdAt},
+            #{updatedAt},
+            #{createdBy}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.hyperion.etl.domain.Pipeline">
+        UPDATE pipelines SET
+            domain = #{domain},
+            name = #{name},
+            description = #{description},
+            status = #{status}::varchar,
+            version = #{version},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}::uuid
+    </update>
+
+    <select id="findById" resultMap="PipelineResultMap">
+        SELECT * FROM pipelines
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findAll" resultMap="PipelineResultMap">
+        SELECT * FROM pipelines
+        <where>
+            <if test="domain != null">
+                AND domain = #{domain}
+            </if>
+            <if test="status != null">
+                AND status = #{status}::varchar
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteById">
+        DELETE FROM pipelines
+        WHERE id = #{id}::uuid
+    </delete>
+
+    <select id="existsByDomainAndName" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM pipelines
+            WHERE domain = #{domain}
+            AND name = #{name}
+        )
+    </select>
+
+</mapper>

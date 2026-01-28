@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hyperion.etl.mapper.PipelineRunMapper">
+
+    <resultMap id="PipelineRunResultMap" type="com.hyperion.etl.domain.PipelineRun">
+        <id property="id" column="id"/>
+        <result property="pipelineId" column="pipeline_id"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="finishedAt" column="finished_at"/>
+        <result property="triggeredBy" column="triggered_by"/>
+        <result property="errorMessage" column="error_message"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.hyperion.etl.domain.PipelineRun">
+        INSERT INTO pipeline_runs (
+            id, pipeline_id, status, started_at, finished_at, triggered_by, error_message
+        ) VALUES (
+            #{id}::uuid,
+            #{pipelineId}::uuid,
+            #{status}::varchar,
+            #{startedAt},
+            #{finishedAt},
+            #{triggeredBy},
+            #{errorMessage}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.hyperion.etl.domain.PipelineRun">
+        UPDATE pipeline_runs SET
+            status = #{status}::varchar,
+            started_at = #{startedAt},
+            finished_at = #{finishedAt},
+            error_message = #{errorMessage}
+        WHERE id = #{id}::uuid
+    </update>
+
+    <select id="findById" resultMap="PipelineRunResultMap">
+        SELECT * FROM pipeline_runs
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findByPipelineId" resultMap="PipelineRunResultMap">
+        SELECT * FROM pipeline_runs
+        WHERE pipeline_id = #{pipelineId}::uuid
+        ORDER BY started_at DESC
+    </select>
+
+    <select id="findByStatus" resultMap="PipelineRunResultMap">
+        SELECT * FROM pipeline_runs
+        WHERE status = #{status}::varchar
+        ORDER BY started_at DESC
+    </select>
+
+</mapper>

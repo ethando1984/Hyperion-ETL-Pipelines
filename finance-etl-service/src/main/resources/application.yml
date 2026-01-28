@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: finance-etl-service
+  
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: finance-etl-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.hyperion.etl.events
+        spring.json.use.type.headers: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    topics:
+      node-execute: etl.node.execute
+      node-completed: etl.node.completed
+      node-failed: etl.node.failed
+      data-product-published: etl.data.product.published
+
+# Server Configuration
+server:
+  port: 8084
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      domain: finance
+      application: ${spring.application.name}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.hyperion.etl.finance: DEBUG
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Finance Domain Configuration
+finance:
+  etl:
+    domain-name: finance
+    # Data warehouse connection
+    warehouse:
+      jdbc-url: jdbc:postgresql://localhost:5431/finance_warehouse
+      username: admin
+      password: admin
+      driver-class-name: org.postgresql.Driver
+      maximum-pool-size: 10
+    # Source database connection
+    source:
+      jdbc-url: jdbc:postgresql://localhost:5431/finance_source
+      username: admin
+      password: admin
+      driver-class-name: org.postgresql.Driver
+      maximum-pool-size: 5

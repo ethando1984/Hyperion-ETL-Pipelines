@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hyperion.etl.mapper.PipelineEdgeMapper">
+
+    <resultMap id="PipelineEdgeResultMap" type="com.hyperion.etl.domain.PipelineEdge">
+        <id property="id" column="id"/>
+        <result property="pipelineId" column="pipeline_id"/>
+        <result property="fromNodeId" column="from_node_id"/>
+        <result property="toNodeId" column="to_node_id"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.hyperion.etl.domain.PipelineEdge">
+        INSERT INTO pipeline_edges (
+            id, pipeline_id, from_node_id, to_node_id
+        ) VALUES (
+            #{id}::uuid,
+            #{pipelineId}::uuid,
+            #{fromNodeId}::uuid,
+            #{toNodeId}::uuid
+        )
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO pipeline_edges (
+            id, pipeline_id, from_node_id, to_node_id
+        ) VALUES
+        <foreach collection="edges" item="edge" separator=",">
+            (
+                #{edge.id}::uuid,
+                #{edge.pipelineId}::uuid,
+                #{edge.fromNodeId}::uuid,
+                #{edge.toNodeId}::uuid
+            )
+        </foreach>
+    </insert>
+
+    <select id="findByPipelineId" resultMap="PipelineEdgeResultMap">
+        SELECT * FROM pipeline_edges
+        WHERE pipeline_id = #{pipelineId}::uuid
+    </select>
+
+    <delete id="deleteByPipelineId">
+        DELETE FROM pipeline_edges
+        WHERE pipeline_id = #{pipelineId}::uuid
+    </delete>
+
+</mapper>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="006-create-indexes" author="hyperion-etl">
+        <!-- Index for querying pipelines by domain -->
+        <createIndex indexName="idx_pipelines_domain" tableName="pipelines">
+            <column name="domain"/>
+        </createIndex>
+
+        <!-- Index for querying pipelines by status -->
+        <createIndex indexName="idx_pipelines_status" tableName="pipelines">
+            <column name="status"/>
+        </createIndex>
+
+        <!-- Index for querying nodes by pipeline -->
+        <createIndex indexName="idx_pipeline_nodes_pipeline_id" tableName="pipeline_nodes">
+            <column name="pipeline_id"/>
+        </createIndex>
+
+        <!-- Index for querying edges by pipeline -->
+        <createIndex indexName="idx_pipeline_edges_pipeline_id" tableName="pipeline_edges">
+            <column name="pipeline_id"/>
+        </createIndex>
+
+        <!-- Index for querying runs by pipeline -->
+        <createIndex indexName="idx_pipeline_runs_pipeline_id" tableName="pipeline_runs">
+            <column name="pipeline_id"/>
+        </createIndex>
+
+        <!-- Index for querying runs by status -->
+        <createIndex indexName="idx_pipeline_runs_status" tableName="pipeline_runs">
+            <column name="status"/>
+        </createIndex>
+
+        <!-- Index for querying logs by run -->
+        <createIndex indexName="idx_execution_logs_run_id" tableName="execution_logs">
+            <column name="run_id"/>
+        </createIndex>
+
+        <!-- Index for querying logs by timestamp (for streaming) -->
+        <createIndex indexName="idx_execution_logs_timestamp" tableName="execution_logs">
+            <column name="timestamp"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

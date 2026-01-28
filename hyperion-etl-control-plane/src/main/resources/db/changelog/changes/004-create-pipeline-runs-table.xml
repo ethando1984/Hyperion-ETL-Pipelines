@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="004-create-pipeline-runs-table" author="hyperion-etl">
+        <createTable tableName="pipeline_runs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="pipeline_id" type="UUID">
+                <constraints nullable="false"
+                             foreignKeyName="fk_pipeline_runs_pipeline"
+                             referencedTableName="pipelines"
+                             referencedColumnNames="id"/>
+            </column>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="started_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="finished_at" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="triggered_by" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_message" type="TEXT"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
