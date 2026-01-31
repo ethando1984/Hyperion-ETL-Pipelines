@@ -1,62 +1,96 @@
-
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import TopNav from '../components/TopNav';
 import { useNavigate } from 'react-router-dom';
-import { pipelineApi } from '../services/api'; // Real API
+import { pipelineApi } from '../services/api';
 import { Icon } from '../components/common/Icon';
 import { Loader } from '../components/common/Loader';
 import { getStatusColor, getPipelineIconInfo } from '../utils/common';
-
-interface StatCardProps {
-  icon: string;
-  label: string;
-  value: string | number;
-  colorClass: string;
-  isError?: boolean;
-}
-
-interface PipelineCardProps {
-  pipeline: any; // Using backend Pipeline type
-  onEdit: () => void;
-}
+import { PipelineFormModal } from '../components/PipelineFormModal';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { useToast } from '../contexts/ToastContext';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { error: showError } = useToast();
   const [pipelines, setPipelines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Modal states
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState<any>(null);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [domainFilter, setDomainFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const fetchPipelines = async () => {
+    try {
+      setLoading(true);
+      const data = await pipelineApi.getAll();
+      setPipelines(data);
+    } catch (err: any) {
+      console.error("Failed to fetch pipelines", err);
+      showError(err.message || 'Failed to connect to backend');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        // Call real backend API
-        const pipelinesData = await pipelineApi.getAll();
-        setPipelines(pipelinesData);
-      } catch (error: any) {
-        console.error("Failed to fetch pipelines", error);
-        setError(error.message || 'Failed to connect to backend');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchPipelines();
   }, []);
 
-  // Compute stats from pipelines
-  const stats = useMemo(() => {
-    return {
-      totalPipelines: pipelines.length,
-      runningNow: pipelines.filter(p => p.status === 'Running').length,
-      criticalErrors: pipelines.filter(p => p.status === 'Error').length
-    };
-  }, [pipelines]);
+  // Filtered pipelines
+  const filteredPipelines = useMemo(() => {
+    return pipelines.filter(p => {
+      const matchesSearch = !searchQuery ||
+        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.id?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDomain = !domainFilter || p.domain === domainFilter;
+      const matchesStatus = !statusFilter || p.status === statusFilter;
+      return matchesSearch && matchesDomain && matchesStatus;
+    });
+  }, [pipelines, searchQuery, domainFilter, statusFilter]);
 
-  if (loading) {
-    return <Loader fullScreen label="Loading Dashboard..." />;
-  }
+  const stats = useMemo(() => ({
+    totalPipelines: pipelines.length,
+    runningNow: pipelines.filter(p => p.status === 'Running').length,
+    criticalErrors: pipelines.filter(p => p.status === 'Error').length
+  }), [pipelines]);
+
+  const uniqueDomains = useMemo(() =>
+    Array.from(new Set(pipelines.map(p => p.domain).filter(Boolean))),
+    [pipelines]
+  );
+
+  const handleCreate = () => {
+    setSelectedPipeline(null);
+    setShowFormModal(true);
+  };
+
+  const handleEdit = (pipeline: any) => {
+    setSelectedPipeline(pipeline);
+    setShowFormModal(true);
+  };
+
+  const handleDelete = (pipeline: any) => {
+    setSelectedPipeline(pipeline);
+    setShowDeleteModal(true);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setDomainFilter('');
+    setStatusFilter('');
+  };
+
+  if (loading) return <Loader fullScreen label="Loading Dashboard..." />;
+
+  const hasFilters = searchQuery || domainFilter || statusFilter;
+  const showEmpty = pipelines.length === 0 && !hasFilters;
+  const showNoResults = filteredPipelines.length === 0 && hasFilters;
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 overflow-y-auto">
@@ -72,7 +106,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="mt-4 md:mt-0">
             <button
-              onClick={() => navigate('/builder')}
+              onClick={handleCreate}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none transition-colors"
             >
               <Icon name="add_circle" className="mr-2 text-lg" />
@@ -83,25 +117,9 @@ const Dashboard: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <StatCard
-            icon="schema"
-            label="Total Pipelines"
-            value={stats?.totalPipelines || 0}
-            colorClass="bg-blue-50 text-primary-600 dark:bg-blue-900/30"
-          />
-          <StatCard
-            icon="motion_photos_on"
-            label="Running Now"
-            value={stats?.runningNow || 0}
-            colorClass="bg-green-50 text-green-600 dark:bg-green-900/30"
-          />
-          <StatCard
-            icon="report_problem"
-            label="Critical Errors"
-            value={stats?.criticalErrors || 0}
-            colorClass="bg-red-50 text-red-600 dark:bg-red-900/30"
-            isError
-          />
+          <StatCard icon="schema" label="Total Pipelines" value={stats.totalPipelines} colorClass="bg-blue-50 text-primary-600 dark:bg-blue-900/30" />
+          <StatCard icon="motion_photos_on" label="Running Now" value={stats.runningNow} colorClass="bg-green-50 text-green-600 dark:bg-green-900/30" />
+          <StatCard icon="report_problem" label="Critical Errors" value={stats.criticalErrors} colorClass="bg-red-50 text-red-600 dark:bg-red-900/30" isError />
         </div>
 
         {/* Filter Bar */}
@@ -112,35 +130,103 @@ const Dashboard: React.FC = () => {
             </div>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-white block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md py-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="Search pipelines..."
             />
           </div>
           <div className="flex gap-4">
-            <SelectDropdown label="All Sources" />
-            <SelectDropdown label="All Destinations" />
-            <SelectDropdown label="Status" />
+            <select
+              value={domainFilter}
+              onChange={(e) => setDomainFilter(e.target.value)}
+              className="bg-white block w-40 pl-3 pr-8 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+            >
+              <option value="">All Domains</option>
+              {uniqueDomains.map(domain => (
+                <option key={domain} value={domain}>{domain}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-white block w-40 pl-3 pr-8 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+            >
+              <option value="">All Status</option>
+              <option value="Success">Success</option>
+              <option value="Running">Running</option>
+              <option value="Error">Error</option>
+              <option value="Paused">Paused</option>
+            </select>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Pipelines Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {pipelines.map(pipeline => (
-            <PipelineCard
-              key={pipeline.id}
-              pipeline={pipeline}
-              onEdit={() => navigate('/builder')}
-            />
-          ))}
-        </div>
+        {/* Empty State */}
+        {showEmpty && (
+          <div className="text-center py-12">
+            <Icon name="post_add" className="text-6xl text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No pipelines yet</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Get started by creating your first ETL pipeline</p>
+            <button onClick={handleCreate} className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg">
+              <Icon name="add_circle" className="mr-2" />
+              Create Pipeline
+            </button>
+          </div>
+        )}
 
+        {/* No Results */}
+        {showNoResults && (
+          <div className="text-center py-12">
+            <Icon name="search_off" className="text-6xl text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No matching pipelines</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Try adjusting your filters</p>
+            <button onClick={clearFilters} className="text-primary-600 hover:text-primary-700 font-medium">
+              Clear all filters
+            </button>
+          </div>
+        )}
+
+        {/* Pipelines Grid */}
+        {!showEmpty && !showNoResults && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {filteredPipelines.map(pipeline => (
+              <PipelineCard
+                key={pipeline.id}
+                pipeline={pipeline}
+                onEdit={() => handleEdit(pipeline)}
+                onDelete={() => handleDelete(pipeline)}
+              />
+            ))}
+          </div>
+        )}
       </main>
+
+      {/* Modals */}
+      <PipelineFormModal
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        pipeline={selectedPipeline}
+        onSuccess={fetchPipelines}
+      />
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        pipeline={selectedPipeline}
+        onSuccess={fetchPipelines}
+      />
     </div>
   );
 };
 
-// Sub-components for Dashboard
-const StatCard = memo(({ icon, label, value, colorClass, isError }: StatCardProps) => (
+const StatCard = memo(({ icon, label, value, colorClass, isError }: any) => (
   <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border ${isError ? 'border-l-4 border-l-red-500 border-y border-r border-gray-200 dark:border-gray-700' : 'border border-gray-200 dark:border-gray-700'} flex items-center`}>
     <div className={`flex-shrink-0 p-3 rounded-lg ${colorClass}`}>
       <Icon name={icon} className="text-2xl" />
@@ -152,30 +238,13 @@ const StatCard = memo(({ icon, label, value, colorClass, isError }: StatCardProp
   </div>
 ));
 
-const SelectDropdown = memo(({ label }: { label: string }) => (
-  <select className="bg-white block w-40 pl-3 pr-8 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
-    <option>{label}</option>
-  </select>
-));
-
-const PipelineCard = memo(({ pipeline, onEdit }: PipelineCardProps) => {
-  const { name, id, status, source, dest, lastRun, dataSize } = pipeline;
-
+const PipelineCard = memo(({ pipeline, onEdit, onDelete }: any) => {
+  const { name, id, status } = pipeline;
   const { icon, bg: iconBg } = getPipelineIconInfo(name);
   const statusColor = getStatusColor(status);
 
-  const getStatusIconElement = (s: string) => {
-    if (s === 'Running') return <span className="animate-pulse w-2 h-2 mr-1.5 bg-blue-500 rounded-full"></span>;
-    if (s === 'Success') return <span className="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>;
-    if (s === 'Error') return <Icon name="error_outline" className="text-sm mr-1" />;
-    return <span className="w-2 h-2 mr-1.5 bg-gray-500 rounded-full"></span>;
-  }
-
   return (
-    <div
-      onClick={onEdit}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-primary-300 transition-all cursor-pointer group"
-    >
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-primary-300 transition-all group">
       <div className="p-5">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
@@ -183,54 +252,24 @@ const PipelineCard = memo(({ pipeline, onEdit }: PipelineCardProps) => {
               <Icon name={icon} className="text-2xl" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{name}</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{name}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID: {id}</p>
             </div>
           </div>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
-            {getStatusIconElement(status)}
             {status}
           </span>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-4 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <Icon name="login" className="text-gray-400 text-lg" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">{source}</span>
-          </div>
-          <Icon name="arrow_forward" className="text-gray-400 text-sm" />
-          <div className="flex items-center gap-2">
-            <Icon name="logout" className="text-gray-400 text-lg" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">{dest}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-5">
-          <div className="flex items-center gap-1">
-            <Icon name="schedule" className="text-sm" />
-            {lastRun}
-          </div>
-          <div className="flex items-center gap-1">
-            <Icon name="storage" className="text-sm" />
-            {dataSize}
-          </div>
-        </div>
-
         <div className="border-t border-gray-100 dark:border-gray-700 pt-4 flex items-center justify-between">
-          <button className="flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700">
-            <Icon name="play_arrow" className="text-lg" />
-            Run Now
+          <button onClick={onEdit} className="flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700">
+            <Icon name="edit" className="text-lg" />
+            Edit
           </button>
-          <div className="flex gap-4">
-            <button className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-white">
-              <Icon name="settings" className="text-lg" />
-              Config
-            </button>
-            <button className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-white">
-              <Icon name="history" className="text-lg" />
-              History
-            </button>
-          </div>
+          <button onClick={onDelete} className="flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700">
+            <Icon name="delete" className="text-lg" />
+            Delete
+          </button>
         </div>
       </div>
     </div>

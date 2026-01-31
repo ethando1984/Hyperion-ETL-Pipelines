@@ -23,13 +23,14 @@ spring:
     change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
   
-  # OAuth2 Resource Server
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080
-          jwk-set-uri: http://localhost:8080/.well-known/jwks.json
+  # OAuth2 Resource Server (DISABLED FOR DEVELOPMENT)
+  # Uncomment when auth server is available
+  #security:
+  #  oauth2:
+  #    resourceserver:
+  #      jwt:
+  #        issuer-uri: http://localhost:8080
+  #        jwk-set-uri: http://localhost:8080/.well-known/jwks.json
   
   # Kafka Configuration
   kafka:
@@ -118,3 +119,10 @@ hyperion:
     validation:
       max-nodes: 100
       max-edges: 500
+
+# CORS Configuration
+# Development: Wildcard patterns allow all localhost ports
+# Production: Set cors.allowed-origins with comma-separated URLs
+# Example: cors.allowed-origins=https://app.example.com,https://admin.example.com
+cors:
+  allowed-origins:

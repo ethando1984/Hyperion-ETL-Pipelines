@@ -2,48 +2,49 @@ package com.hyperion.etl.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
 
 /**
  * Security Configuration for Hyperion ETL Control Plane
  * 
- * Configures OAuth2 Resource Server with JWT validation.
- * All authorization is permission-based (no tenant isolation).
+ * OAuth2 and method-level security DISABLED for development.
+ * 
+ * Note: CORS is configured in CorsConfig.java
+ * 
+ * TODO: Re-enable when OAuth2 server is available:
+ * - Uncomment @EnableMethodSecurity
+ * - Uncomment OAuth2 configuration in application.yml
+ * - Update securityFilterChain to require authentication
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+// Method security disabled for development - re-enable when auth server is
+// ready
+// @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CORS is configured in CorsConfig.java via CorsConfigurationSource bean
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        // Public endpoints
-                        .requestMatchers(
-                                "/actuator/health",
-                                "/actuator/info",
-                                "/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html")
-                        .permitAll()
-                        // All other endpoints require authentication
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                        // Allow all requests for development (OAuth2 disabled)
+                        // TODO: Re-enable authentication when auth server is available
+                        .anyRequest().permitAll());
+
+        // OAuth2 Resource Server disabled for development
+        // Uncomment when auth server is running:
+        // .oauth2ResourceServer(oauth2 -> oauth2
+        // .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
     }
@@ -56,18 +57,5 @@ public class SecurityConfig {
     @Bean
     public PermissionEvaluator permissionEvaluator() {
         return new PermissionEvaluator();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

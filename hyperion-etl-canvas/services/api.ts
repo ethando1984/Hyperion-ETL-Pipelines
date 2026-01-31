@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:8083/api';
 
 // Get token from oidc-client-ts user session
 const getAccessToken = (): string | null => {
-    const oidcStorage = sessionStorage.getItem(`oidc.user:http://localhost:8080:hyperion-etl-canvas`);
+    const oidcStorage = sessionStorage.getItem(`oidc.user:http://localhost:8080:hyperion-cms`);
     if (oidcStorage) {
         try {
             const user = JSON.parse(oidcStorage);
