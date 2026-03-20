@@ -306,4 +306,4 @@ The UI already exists in `hyperion-etl-canvas/`. Key integration points:
 
 ## 📝 License
 
-Proprietary - Hyperion Platform
+Apache-2.0, MIT, Hyperion Platform
